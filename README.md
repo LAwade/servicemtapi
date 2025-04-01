@@ -26,9 +26,10 @@ docker-compose up -d
 docker exec -it ServiceMTAPI /bin/bash 
 ```
 
-### 4. Executes os seguintes comandos (Caso necessário)
+### 4. Executes os seguintes comandos
 ```bash
 php artisan migrate 
+php artisan db:seed
 php artisan serve --host=0.0.0.0 --port=8181
 ```
 
