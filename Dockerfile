@@ -21,15 +21,19 @@ RUN mv composer.phar /usr/local/bin/composer
 RUN alias composer='/usr/local/bin/composer'
 
 COPY . .
-RUN composer install --no-dev --prefer-dist --no-progress --no-suggest
+
+RUN composer install 
 
 ## ATRIBUINDO PERMISSÕES NOS FILES
 RUN chown -R www-data:www-data storage bootstrap/cache
 RUN chmod -R 775 storage bootstrap/cache
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+
+RUN cp .env_example .env
+RUN php artisan key:generate
+
+RUN php artisan migrate
+RUN php artisan db:seed
 
 EXPOSE 8181
-ENTRYPOINT ["/entrypoint.sh"]
-
+ENTRYPOINT [ "php" ]
 CMD [ "php", 'artisan', 'serve', '--host=0.0.0.0', '--port=8181' ]
