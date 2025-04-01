@@ -22,13 +22,13 @@ RUN alias composer='/usr/local/bin/composer'
 
 COPY . .
 
-RUN composer install 
-
 ## ATRIBUINDO PERMISSÕES NOS FILES
 RUN chown -R www-data:www-data storage bootstrap/cache
 RUN chmod -R 775 storage bootstrap/cache
 
 RUN cp .env_example .env
+
+RUN composer install 
 
 EXPOSE 8181
 #ENTRYPOINT [ "php" ]

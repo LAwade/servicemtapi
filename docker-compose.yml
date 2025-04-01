@@ -15,7 +15,7 @@ services:
     volumes:
       - .:/app
     depends_on:
-      db:
+      postgresdb:
         condition: service_healthy
       minio:
         condition: service_healthy
@@ -23,7 +23,7 @@ services:
       - "8181:8181"
     environment:
       - DB_CONNECTION=pgsql
-      - DB_HOST=db
+      - DB_HOST=postgresdb
       - DB_PORT=5432
       - DB_DATABASE=servicemt
       - DB_USERNAME=servicemt
@@ -33,7 +33,7 @@ services:
       - AWS_DEFAULT_REGION=us-east-1
       - AWS_BUCKET=bucketapi
       - AWS_ENDPOINT=http://minio:9000
-  db:
+  postgresdb:
     image: postgres:latest
     container_name: postgresdb
     restart: unless-stopped
