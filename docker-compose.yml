@@ -3,7 +3,6 @@ networks:
   working:
     driver: bridge
 services:
-  
   app:
     build:
       context: .
@@ -42,9 +41,9 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: ${DB_DATABASE}
-      POSTGRES_USER: ${DB_USERNAME}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      - POSTGRES_USER=servicemt
+      - POSTGRES_PASSWORD=123456
+      - POSTGRES_DB=servicemt
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:

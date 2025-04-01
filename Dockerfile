@@ -19,14 +19,10 @@ WORKDIR /app
 COPY . .
 RUN composer install --no-dev --prefer-dist --no-progress --no-suggest
 
-RUN cp .env_example .env
-
 RUN chown -R www-data:www-data storage bootstrap/cache
 RUN chmod -R 775 storage bootstrap/cache
 
-RUN php artisan key:generate
-
 EXPOSE 8181
-ENTRYPOINT ["php"]
+ENTRYPOINT ["/entrypoint.sh"]
 
 CMD [ "php", 'artisan', 'serve', '--host=0.0.0.0', '--port=8181' ]
