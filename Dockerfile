@@ -26,9 +26,6 @@ RUN chmod -R 775 storage bootstrap/cache
 
 RUN php artisan key:generate
 
-RUN php artisan migrate
-RUN php artisan db:seed
-
 EXPOSE 8181
 ENTRYPOINT ["php"]
 
