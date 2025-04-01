@@ -7,7 +7,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    entrypoint: ["/entrypoint.sh"]
     container_name: servicemt
     restart: unless-stopped
     working_dir: /app
