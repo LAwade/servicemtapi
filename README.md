@@ -23,7 +23,7 @@ docker-compose up -d
 
 ### 3. Acesse o container ServiceMTAPI
 ```bash
-docker exec -it ServiceMTAPI /bin/bash 
+docker exec -it servicemt /bin/bash 
 ```
 
 ### 4. Executes os seguintes comandos
