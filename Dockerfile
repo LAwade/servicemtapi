@@ -29,8 +29,7 @@ RUN chown -R www-data:www-data storage bootstrap/cache
 RUN chmod -R 775 storage bootstrap/cache
 
 RUN cp .env_example .env
-RUN php artisan key:generate
 
 EXPOSE 8181
-ENTRYPOINT [ "php" ]
-CMD [ "php", 'artisan', 'serve', '--host=0.0.0.0', '--port=8181' ]
+#ENTRYPOINT [ "php" ]
+#CMD [ "php", 'artisan', 'serve', '--host=0.0.0.0', '--port=8181' ]
