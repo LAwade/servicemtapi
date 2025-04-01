@@ -13,14 +13,21 @@ RUN apt-get update -y \
     && docker-php-ext-install pdo pdo_pgsql mbstring \
     && rm -rf /var/lib/apt/lists/* 
 
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 WORKDIR /app
+
+RUN curl -s https://getcomposer.org/installer | php
+RUN mv composer.phar /usr/local/bin/composer
+RUN alias composer='/usr/local/bin/composer'
+
 COPY . .
 RUN composer install --no-dev --prefer-dist --no-progress --no-suggest
 
+## ATRIBUINDO PERMISSÕES NOS FILES
 RUN chown -R www-data:www-data storage bootstrap/cache
 RUN chmod -R 775 storage bootstrap/cache
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 EXPOSE 8181
 ENTRYPOINT ["/entrypoint.sh"]

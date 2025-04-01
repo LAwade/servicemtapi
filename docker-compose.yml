@@ -7,10 +7,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    entrypoint: ["/entrypoint.sh"]
     container_name: servicemt
     restart: unless-stopped
     working_dir: /app
-    privileged: true
     networks:
       - working
     volumes:
@@ -41,9 +41,9 @@ services:
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_USER=servicemt
-      - POSTGRES_PASSWORD=123456
-      - POSTGRES_DB=servicemt
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
