@@ -22,17 +22,17 @@ services:
     ports:
       - "8181:8181"
     environment:
-      DB_CONNECTION: pgsql
-      DB_HOST: db
-      DB_PORT: 5432
-      DB_DATABASE: servicemt
-      DB_USERNAME: servicemt
-      DB_PASSWORD: 123456
-      AWS_ACCESS_KEY_ID: minioadmin
-      AWS_SECRET_ACCESS_KEY: minioadmin
-      AWS_DEFAULT_REGION: us-east-1
-      AWS_BUCKET: bucketapi
-      AWS_ENDPOINT: http://minio:9000
+      - DB_CONNECTION=pgsql
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_DATABASE=servicemt
+      - DB_USERNAME=servicemt
+      - DB_PASSWORD=123456
+      - AWS_ACCESS_KEY_ID=minioadmin
+      - AWS_SECRET_ACCESS_KEY=minioadmin
+      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_BUCKET=bucketapi
+      - AWS_ENDPOINT=http://minio:9000
   db:
     image: postgres:latest
     container_name: postgresdb
