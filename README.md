@@ -1,4 +1,9 @@
-# API REST PARA Servidores Da SEPLAG
+# PROCESSO SELETIVO SEPLAG
+# API REST - Servidores
+
+## Participante
+- Nome: LUCAS AWADE TEIXEIRA SILVA
+- Posição: Desenvolvedor PHP - PLENO
 
 ## Visão Geral
 Sistema desenvolvido em PHP 8.1 para o processo seletivo da SEPLAG, na qual consiste em salvar informações de Servidor Efetivo, Servidor Temporário, Unidade e Lotação. Também foi seguido as tecnologias compostas no conforme o proposto. 
@@ -26,10 +31,14 @@ docker-compose up -d
 docker exec -it servicemt /bin/bash 
 ```
 
-### 4. Executes os seguintes comandos
+### 4. Executes os seguintes comandos (1ª vez)
 ```bash
 php artisan migrate 
 php artisan db:seed
+php artisan serve --host=0.0.0.0 --port=8181
+```
+### 4.1 Executes os seguintes comandos (Depois da 1ª vez)
+```bash
 php artisan serve --host=0.0.0.0 --port=8181
 ```
 
