@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Cidade;
 use Illuminate\Http\Request;
-use OpenApi\Annotations as OA;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Log;
 
 class CidadeController extends Controller
 {
@@ -28,19 +30,33 @@ class CidadeController extends Controller
             $request->headers->set('Accept', 'application/json');
         }
 
-        $valited = $request->validate([
-            'cid_nome' => 'required|string',
-            'cid_uf' => 'required|string',
-        ]);
-
         try {
+
+            $valited = $request->validate([
+                'cid_nome' => 'required|string',
+                'cid_uf' => 'required|string',
+            ]);
+
             $cidade = Cidade::where('cid_nome', $request->cid_nome)->first();
             if (!$cidade) {
                 $cidade = Cidade::create($valited);
             }
             return response()->json(['message' => 'Cidade cadastrada com sucesso!', 'cidade' => $cidade], 200);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Erro de validação',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (QueryException $e) {
+            Log::channel('database_errors')->error('Erro ao adicionar a cidade no banco de dados', [
+                'exception' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'input' => $request->all(),
+            ]);
+            return response()->json(['message' => 'Erro ao cadastrar cidade'], 500);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Erro ao cadastrar cidade', 'error' => $e->getMessage()], 500);
+            return response()->json(['message' => 'Erro ao cadastrar cidade'], 500);
         } 
     }
 
@@ -66,21 +82,34 @@ class CidadeController extends Controller
             $request->headers->set('Accept', 'application/json');
         }
 
-        $valited = $request->validate([
-            'cid_nome' => 'string',
-            'cid_uf' => 'string',
-        ]);
-
         try {
+            $valited = $request->validate([
+                'cid_nome' => 'required|string',
+                'cid_uf' => 'required|string',
+            ]);
+
             $cidade = Cidade::where('cid_id', $cid_id)->first();
             if (!$cidade) {
-                return response()->json(['message' => 'Usuário não encontrado'], 404);
+                return response()->json(['message' => 'Cidade não foi encontrado'], 404);
             }
 
             $cidade->update($valited);
             return response()->json(['message' => 'O registro da cidade foi atualizada', 'cidade' => $cidade], 200);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Erro de validação',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (QueryException $e) {
+            Log::channel('database_errors')->error('Erro ao atualizar a cidade no banco de dados', [
+                'exception' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'input' => $request->all(),
+            ]);
+            return response()->json(['message' => 'Erro ao atualizar cidade'], 500);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Erro ao atualizar cidade', 'error' => $e->getMessage()], 500);
+            return response()->json(['message' => 'Erro ao atualizar cidade'], 500);
         }
     }
 
@@ -89,12 +118,20 @@ class CidadeController extends Controller
         try {
             $cidade = Cidade::where('cid_id', $cid_id)->first();
             if (!$cidade) {
-                return response('Error', 404)->json(['message' => 'Usuário não encontrado']);
+                return response()->json(['message' => 'Cidade não foi encontrada'], 404);
             }
             $cidade->delete();
             return response()->json(['message' => 'Registro foi removido', 'cidade' => $cidade], 200);
+        } catch (QueryException $e) {
+            Log::channel('database_errors')->error('Erro ao deletar a cidade no banco de dados', [
+                'exception' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'input' => $request->all(),
+            ]);
+            return response()->json(['message' => 'Erro ao buscar/deleção da cidade'], 500);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Erro ao buscar/deleção da cidade', 'error' => $e->getMessage()], 500);
+            return response()->json(['message' => 'Erro ao buscar/deleção da cidade'], 500);
         }
     }
 }

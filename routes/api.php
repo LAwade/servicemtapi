@@ -12,11 +12,12 @@ use App\Http\Controllers\ServidorTemporarioController;
 use App\Http\Controllers\UnidadeController;
 use App\Http\Controllers\UnidadeEnderecoController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Middleware\CheckTokenExpiration;
 
 /** AUTENTICAÇÃO DE LOGIN **/
 Route::post('/login', [AuthController::class, 'login']);
 
-Route::middleware('auth:sanctum')->group(function (){
+Route::middleware(['api', 'auth.api.sanctum'])->group(function (){
 
     /** REFRESH TOKEN **/
     Route::post('/refresh', [AuthController::class, 'refresh']);
@@ -63,7 +64,7 @@ Route::middleware('auth:sanctum')->group(function (){
     Route::get('/lotacao', [LotacaoController::class, 'index']);
     Route::get('/show-lotacao/{lot_id}', [LotacaoController::class, 'show']);
     Route::get('/consulta-unidade/{unid_id}', [LotacaoController::class, 'showByUnidade']);
-    Route::post('/consulta-lotacao-nome/', [LotacaoController::class, 'showByNome']);
+    Route::post('/consulta-lotacao-nome', [LotacaoController::class, 'showByNome']);
     Route::post('/store-lotacao', [LotacaoController::class, 'store']);
     Route::put('/update-lotacao/{lot_id}', [LotacaoController::class, 'update']);
     Route::delete('/delete-lotacao/{lot_id}', [LotacaoController::class, 'destroy']);
@@ -99,3 +100,8 @@ Route::middleware('auth:sanctum')->group(function (){
 
 });
 
+Route::fallback(function () {
+    return response()->json([
+        'message' => 'Rota não encontrada. Verifique a documentação da API.'
+    ], 404);
+});

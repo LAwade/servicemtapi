@@ -52,6 +52,14 @@ return [
 
     'channels' => [
 
+        'database_errors' => [
+            'driver' => 'single',
+            'path' => function () {
+                return storage_path('logs/database_errors_' . date('Ymd') . '.log');
+            },
+            'level' => 'error',
+        ],
+
         'stack' => [
             'driver' => 'stack',
             'channels' => explode(',', env('LOG_STACK', 'single')),

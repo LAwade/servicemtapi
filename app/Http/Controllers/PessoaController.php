@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Pessoa;
-use OpenApi\Annotations as OA;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Log;
 
 class PessoaController extends Controller
 {
@@ -15,7 +17,7 @@ class PessoaController extends Controller
             $pessoas = Pessoa::paginate(20);
             return response()->json($pessoas, 200);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Erro ao buscar pessoas', 'error' => $e->getMessage()], 500);
+            return response()->json(['message' => 'Erro ao buscar pessoas'], 500);
         }
     }
 
@@ -25,24 +27,37 @@ class PessoaController extends Controller
             $request->headers->set('Accept', 'application/json');
         }
 
-        $valited = $request->validate([
-            'pes_id' => 'required|integer',
-            'pes_nome' => 'required|string',
-            'pes_data_nascimento' => 'required|date',
-            'pes_sexo' => 'required|string',
-            'pes_mae' => 'string',
-            'pes_pai' => 'string',
-        ]);
-
         try {
+            $valited = $request->validate([
+                'pes_id' => 'required|integer',
+                'pes_nome' => 'required|string',
+                'pes_data_nascimento' => 'required|date',
+                'pes_sexo' => 'required|string',
+                'pes_mae' => 'string',
+                'pes_pai' => 'string',
+            ]);
+
             $pessoa = Pessoa::where('pes_id', $request->pes_id)->first();
             if (!$pessoa) {
                 $pessoa = Pessoa::create($valited);
             }
 
             return response()->json(['message' => 'Pessoa cadastrada com sucesso!', 'pessoa' => $pessoa], 201);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Erro de validação',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (QueryException $e) {
+            Log::channel('database_errors')->error('Erro ao adicionar a pessoa no banco de dados', [
+                'exception' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'input' => $request->all(),
+            ]);
+            return response()->json(['message' => 'Erro ao cadastrar pessoa'], 500);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Erro ao cadastrar pessoa', 'error' => $e->getMessage()], 500);
+            return response()->json(['message' => 'Erro ao cadastrar pessoa'], 500);
         }
     }
 
@@ -55,7 +70,7 @@ class PessoaController extends Controller
             }
             return response()->json(['message' => 'Registro de pessoa foi encontrada', 'pessoa' => $pessoa], 200);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Erro ao buscar pessoa', 'error' => $e->getMessage()], 500);
+            return response()->json(['message' => 'Erro ao buscar pessoa'], 500);
         }
     }
 
@@ -66,23 +81,36 @@ class PessoaController extends Controller
             $request->headers->set('Accept', 'application/json');
         }
 
-        $valited = $request->validate([
-            'pes_nome' => 'string',
-            'pes_data_nascimento' => 'date',
-            'pes_sexo' => 'string',
-            'pes_mae' => 'string',
-            'pes_pai' => 'string',
-        ]);
-
         try {
+            $valited = $request->validate([
+                'pes_nome' => 'string',
+                'pes_data_nascimento' => 'date',
+                'pes_sexo' => 'string',
+                'pes_mae' => 'string',
+                'pes_pai' => 'string',
+            ]);
+
             $pessoa = Pessoa::where('pes_id', $pes_id)->first();
             if (!$pessoa) {
                 return response()->json(['message' => 'A pessoa não foi encontrada!'], 404);
             }
             $pessoa->update($valited);
             return response()->json(['message' => 'O registro da pessoa foi atualizada!', 'pessoa' => $pessoa], 200);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Erro de validação',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (QueryException $e) {
+            Log::channel('database_errors')->error('Erro ao atualizar a pessoa no banco de dados', [
+                'exception' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'input' => $request->all(),
+            ]);
+            return response()->json(['message' => 'Erro ao atualizar pessoa'], 500);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Erro ao atualizar pessoa', 'error' => $e->getMessage()], 500);
+            return response()->json(['message' => 'Erro ao atualizar pessoa'], 500);
         }
     }
 
@@ -95,9 +123,17 @@ class PessoaController extends Controller
             }
 
             $pessoa->delete();
-            return response()->json(['message' => 'A pessoa infomada foi removida', 'pessoa' => $pessoa], 200);
+            return response()->json(['message' => 'A pessoa infomada foi removida'], 200);
+        } catch (QueryException $e) {
+            Log::channel('database_errors')->error('Erro ao deletar a pessoa no banco de dados', [
+                'exception' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'input' => $request->all(),
+            ]);
+            return response()->json(['message' => 'Erro ao deletar pessoa'], 500);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Erro ao deletar pessoa', 'error' => $e->getMessage()], 500);
+            return response()->json(['message' => 'Erro ao deletar pessoa'], 500);
         }
     }
 }

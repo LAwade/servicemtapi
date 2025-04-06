@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\PessoaEndereco;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Log;
 
 class PessoaEnderecoController extends Controller
 {
@@ -15,9 +18,9 @@ class PessoaEnderecoController extends Controller
             if (!$pessoaEndereco) {
                 return response()->json(['message' => 'Nenhum registro encontrado'], 404);
             }
-            return response()->json(['message' => 'Pessoas Endereços encontrados', 'pessoaEndereco' => $pessoaEndereco], 200);
+            return response()->json(['message' => 'Os Endereços das Pessoas foram encontrados', 'pessoa_endereco' => $pessoaEndereco], 200);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Erro ao buscar pessoas endereços', 'error' => $e->getMessage()], 500);
+            return response()->json(['message' => 'Erro ao buscar pessoas endereços'], 500);
         }
     }
 
@@ -27,12 +30,12 @@ class PessoaEnderecoController extends Controller
             $request->headers->set('Accept', 'application/json');
         }
 
-        $valited = $request->validate([
-            'pes_id' => 'required|integer',
-            'end_id' => 'required|integer',
-        ]);
-
         try {
+            $valited = $request->validate([
+                'pes_id' => 'required|integer',
+                'end_id' => 'required|integer',
+            ]);
+
             $pessoaEndereco = PessoaEndereco::where('end_id', $request->end_id)->first();
             if ($pessoaEndereco) {
                 return response()->json(['message' => 'Endereço já vinculado a outra pessoa'], 400);
@@ -43,20 +46,38 @@ class PessoaEnderecoController extends Controller
                 $pessoaEndereco = PessoaEndereco::create($valited);
             }
 
-            return response()->json(['message' => 'Vinculo cadastrado com sucesso', 'pessoaEndereco' => $pessoaEndereco], 200);
+            return response()->json(['message' => 'Vinculo cadastrado com sucesso', 'pessoa_endereco' => $pessoaEndereco], 200);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Erro de validação',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (QueryException $e) {
+            Log::channel('database_errors')->error('Erro ao adicionar o vinculo no banco de dados', [
+                'exception' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'input' => $request->all(),
+            ]);
+            return response()->json(['message' => 'Erro ao vincular endereço a pessoa'], 500);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Erro ao vincular endereço a pessoa', 'error' => $e->getMessage()], 500);
+            return response()->json(['message' => 'Erro ao vincular endereço a pessoa'], 500);
         }
     }
 
     public function show(string $pes_id)
     {
-        $pessoaEndereco = PessoaEndereco::with(['pessoa', 'endereco'])->where('pes_id', $pes_id)->orWhere('end_id', $pes_id)->first();
+        try {
+            $pessoaEndereco = PessoaEndereco::with(['pessoa', 'endereco'])->where('pes_id', $pes_id)->orWhere('end_id', $pes_id)->first();
 
-        if (!$pessoaEndereco) {
-            return response()->json(['message' => 'O endereço da pessoa não foi encontrado'], 404);
+            if (!$pessoaEndereco) {
+                return response()->json(['message' => 'O endereço da pessoa não foi encontrado'], 404);
+            }
+            return response()->json(['message' => 'O endereço da pessoa foi encontrado', 'pessoa_endereco' => $pessoaEndereco], 200);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erro ao buscar o endereço da pessoa'], 500);
         }
-        return response()->json(['message' => 'O endereço da pessoa foi encontrado', 'pessoaEndereco' => $pessoaEndereco], 200);
+        
     }
 
     public function update(Request $request, string $pes_id)
@@ -66,20 +87,33 @@ class PessoaEnderecoController extends Controller
             $request->headers->set('Accept', 'application/json');
         }
 
-        $valited = $request->validate([
-            'end_id' => 'integer',
-        ]);
-
         try {
+            $valited = $request->validate([
+                'end_id' => 'integer',
+            ]);
+
             $pessoaEndereco = PessoaEndereco::where('pes_id', $pes_id)->first();
             if (!$pessoaEndereco) {
                 return response()->json(['message' => 'O endereço da pessoa não foi encontrada'], 404);
             }
             $pessoaEndereco->update($valited);
 
-            return response()->json(['message' => 'Pessoa Endereço atualizada', 'pessoaEndereco' => $pessoaEndereco], 200);
+            return response()->json(['message' => 'Pessoa Endereço atualizada', 'pessoa_endereco' => $pessoaEndereco], 200);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Erro de validação',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (QueryException $e) {
+            Log::channel('database_errors')->error('Erro ao atualizar o endereço da pessoa no banco de dados', [
+                'exception' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'input' => $request->all(),
+            ]);
+            return response()->json(['message' => 'Erro ao atualizar o endereço da pessoa'], 500);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Erro ao atualizar o endereço da pessoa', 'error' => $e->getMessage()], 500);
+            return response()->json(['message' => 'Erro ao atualizar o endereço da pessoa'], 500);
         }
     }
 
@@ -93,9 +127,17 @@ class PessoaEnderecoController extends Controller
             } 
                 $pessoaEndereco->delete();
             
-            return response()->json(['message' => 'O endereço da pessoa foi removida', 'pessoaEndereco' => $pessoaEndereco], 200);
+            return response()->json(['message' => 'O endereço da pessoa foi removida'], 200);
+        } catch (QueryException $e) {
+            Log::channel('database_errors')->error('Erro ao deletar o endereço da pessoa no banco de dados', [
+                'exception' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'input' => $request->all(),
+            ]);
+            return response()->json(['message' => 'Erro ao deletar o endereço da pessoa'], 500);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Erro ao deletar o endereço da pessoa', 'error' => $e->getMessage()], 500);
+            return response()->json(['message' => 'Erro ao deletar o endereço da pessoa'], 500);
         }
         
     }

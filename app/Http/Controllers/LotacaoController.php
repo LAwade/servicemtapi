@@ -7,6 +7,9 @@ use App\Models\ServidorEfetivo;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Log;
 
 class LotacaoController extends Controller
 {
@@ -20,7 +23,7 @@ class LotacaoController extends Controller
             }
             return response()->json(['message' => 'As seguintes lotações foram encontradas', 'lotacao' => $lotacao], 200);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Erro ao buscar lotações', 'error' => $e->getMessage()], 500);
+            return response()->json(['message' => 'Erro ao buscar lotações'], 500);
         }   
     }
 
@@ -30,22 +33,35 @@ class LotacaoController extends Controller
             $request->headers->set('Accept', 'application/json');
         }
 
-        $valited = $request->validate([
-            'pes_id' => 'required|integer',
-            'unid_id' => 'required|integer',
-            'lot_data_lotacao' => 'required|date',
-            'lot_data_remocao' => 'required|date',
-            'lot_portaria' => 'required|string',
-        ]);
-
         try {
+            $valited = $request->validate([
+                'pes_id' => 'required|integer',
+                'unid_id' => 'required|integer',
+                'lot_data_lotacao' => 'required|date',
+                'lot_data_remocao' => 'required|date',
+                'lot_portaria' => 'required|string',
+            ]);
+
             $lotacao = Lotacao::where('lot_id', $request->lot_id)->first();
             if (!$lotacao) {
                 $lotacao = Lotacao::create($valited);
             }
             return response()->json(['message' => 'Lotação foi criada com sucesso!', 'lotacao' => $lotacao], 201);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Erro de validação',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (QueryException $e) {
+            Log::channel('database_errors')->error('Erro ao adicionar a lotação no banco de dados', [
+                'exception' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'input' => $request->all(),
+            ]);
+            return response()->json(['message' => 'Erro ao cadastrar lotação'], 500);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Erro ao cadastrar lotação', 'error' => $e->getMessage()], 500);
+            return response()->json(['message' => 'Erro ao cadastrar lotação'], 500);
         }
         
     }
@@ -60,67 +76,108 @@ class LotacaoController extends Controller
 
             return response()->json(['message' => 'A Lotação foi encontrada!', 'lotacao' => $lotacao], 200);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Erro ao buscar lotação', 'error' => $e->getMessage()], 500);
+            return response()->json(['message' => 'Erro ao buscar lotação'], 500);
         }
     }
 
     public function showByUnidade(string $unid_id)
     {
-        $lotacoes = Lotacao::with(['pessoa.foto', 'unidade'])
-            ->where('unid_id', $unid_id)
-            ->paginate(10); // Paginação com 10 registros por página
+        try {
+            $lotacoes = Lotacao::with(['pessoa.foto', 'unidade'])
+                ->where('unid_id', $unid_id)
+                ->paginate(20);
 
-        // Transformando os dados para incluir idade e link da foto
-        $data = $lotacoes->map(function ($lotacao) {
-            return [
-                'nome' => $lotacao->pessoa->pes_nome,
-                'idade' => Carbon::parse($lotacao->pessoa->pes_data_nascimento)->age,
-                'unidade_lotacao' => $lotacao->unidade->unid_nome,
-                'fotografia' => $lotacao->pessoa->foto
-                    ? Storage::disk('s3')->temporaryUrl($lotacao->pessoa->foto->fp_hash, now()->addMinutes(30))
-                    : null,
-            ];
-        });
+            if (!$lotacoes) {
+                return response()->json(['message' => 'Nenhuma lotação encontrada'], 404);
+            }
 
-        return response()->json([
-            'data' => $data,
-            'pagination' => [
-                'current_page' => $lotacoes->currentPage(),
-                'last_page' => $lotacoes->lastPage(),
-                'per_page' => $lotacoes->perPage(),
-                'total' => $lotacoes->total(),
-            ],
-        ]);
+            $data = $lotacoes->map(function ($lotacao) {
+                return [
+                    'nome' => $lotacao->pessoa->pes_nome,
+                    'idade' => Carbon::parse($lotacao->pessoa->pes_data_nascimento)->age,
+                    'unidade_lotacao' => $lotacao->unidade->unid_nome,
+                    'fotografia' => $lotacao->pessoa->foto
+                        ? Storage::disk('s3')->temporaryUrl($lotacao->pessoa->foto->fp_hash, now()->addMinutes(30))
+                        : null,
+                ];
+            });
+
+            return response()->json([
+                'data' => $data,
+                'pagination' => [
+                    'current_page' => $lotacoes->currentPage(),
+                    'last_page' => $lotacoes->lastPage(),
+                    'per_page' => $lotacoes->perPage(),
+                    'total' => $lotacoes->total(),
+                ],
+            ], 200);
+        } catch (QueryException $e) {
+            Log::channel('database_errors')->error('Erro ao buscar lotação no banco de dados', [
+                'exception' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'input' => $request->all(),
+            ]);
+            return response()->json(['message' => 'Erro ao buscar lotação'], 500);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erro ao buscar lotação'], 500);
+        }
+        
     }
 
     public function showByNome(Request $request)
     {
-        $servidores = ServidorEfetivo::with('pessoa.lotacoes.unidade.endereco.endereco')->whereHas('pessoa', function ($q) use ($request) {
-            $q->where('pes_nome', 'ilike', '%' . $request->pes_nome . '%');
-        })->paginate(15);
+        try {
+            $request->validate([
+                'pes_nome' => 'required|string',
+            ]);
 
-        // Transformando os dados para incluir idade e link da foto
-        $data = $servidores->map(function ($servidores) {
-            return [
-                'nome' => $servidores->pessoa->pes_nome,
-                'idade' => Carbon::parse($servidores->pessoa->pes_data_nascimento)->age,
-                'unidade_lotacao' => $servidores->pessoa->lotacoes->unidade->unid_nome,
-                'endereco' => $servidores->pessoa->lotacoes->unidade->endereco->endereco->end_logradouro,
-                'fotografia' => $servidores->pessoa->foto
-                    ? Storage::disk('s3')->temporaryUrl($servidores->pessoa->foto->fp_hash, now()->addMinutes(30))
-                    : null,
-            ];
-        });
+            $servidores = ServidorEfetivo::with('pessoa.lotacoes.unidade.endereco.endereco')->whereHas('pessoa', function ($q) use ($request) {
+                $q->where('pes_nome', 'ilike', '%' . $request->pes_nome . '%');
+            })->paginate(20);
 
-        return response()->json([
-            'data' => $data,
-            'pagination' => [
-                'current_page' => $servidores->currentPage(),
-                'last_page' => $servidores->lastPage(),
-                'per_page' => $servidores->perPage(),
-                'total' => $servidores->total(),
-            ],
-        ]);
+            if (!$servidores) {
+                return response()->json(['message' => 'Nenhum servidor encontrado'], 404);
+            }
+    
+            $data = $servidores->map(function ($servidores) {
+                return [
+                    'nome' => $servidores->pessoa->pes_nome,
+                    'idade' => Carbon::parse($servidores->pessoa->pes_data_nascimento)->age,
+                    'unidade_lotacao' => $servidores->pessoa->lotacoes->unidade->unid_nome,
+                    'endereco' => $servidores->pessoa->lotacoes->unidade->endereco->endereco->end_logradouro,
+                    'fotografia' => $servidores->pessoa->foto
+                        ? Storage::disk('s3')->temporaryUrl($servidores->pessoa->foto->fp_hash, now()->addMinutes(30))
+                        : null,
+                ];
+            });
+    
+            return response()->json([
+                'data' => $data,
+                'pagination' => [
+                    'current_page' => $servidores->currentPage(),
+                    'last_page' => $servidores->lastPage(),
+                    'per_page' => $servidores->perPage(),
+                    'total' => $servidores->total(),
+                ],
+            ], 200);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Erro de validação',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (QueryException $e) {
+            Log::channel('database_errors')->error('Erro ao buscar lotação no banco de dados', [
+                'exception' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'input' => $request->all(),
+            ]);
+            return response()->json(['message' => 'Erro ao buscar lotação'], 500);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erro ao buscar lotação'], 500);
+        }
     }
 
     public function update(Request $request, string $lot_id)
@@ -130,32 +187,60 @@ class LotacaoController extends Controller
             $request->headers->set('Accept', 'application/json');
         }
 
-        $valited = $request->validate([
-            'pes_id' => 'integer',
-            'unid_id' => 'integer',
-            'lot_data_lotacao' => 'date',
-            'lot_data_remocao' => 'date',
-            'lot_portaria' => 'string',
-        ]);
-
-        $lotacao = Lotacao::where('lot_id', $lot_id)->first();
-        if (!$lotacao) {
-            return response('Error', 404)->json(['message' => 'Lotação não encontrada']);
-        } else {
-            $lotacao->update($valited);
+        try {
+            $valited = $request->validate([
+                'pes_id' => 'integer',
+                'unid_id' => 'integer',
+                'lot_data_lotacao' => 'date',
+                'lot_data_remocao' => 'date',
+                'lot_portaria' => 'string',
+            ]);
+    
+            $lotacao = Lotacao::where('lot_id', $lot_id)->first();
+            if (!$lotacao) {
+                return response()->json(['message' => 'Lotação não encontrada'], 404);
+            } else {
+                $lotacao->update($valited);
+            }
+    
+            return response()->json(['message' => 'Lotação atualizada', 'lotacao' => $lotacao], 200);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Erro de validação',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (QueryException $e) {
+            Log::channel('database_errors')->error('Erro ao atualizar a lotação no banco de dados', [
+                'exception' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'input' => $request->all(),
+            ]);
+            return response()->json(['message' => 'Erro ao atualizar lotação'], 500);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erro ao atualizar lotação'], 500);
         }
-
-        return response()->json(['message' => 'Lotação atualizada', 'lotacao' => $lotacao]);
     }
 
     public function destroy(string $lot_id)
     {
-        $lotacao = Lotacao::where('lot_id', $lot_id)->first();
-        if (!$lotacao) {
-            return response('Error', 404)->json(['message' => 'Lotação não encontrada']);
-        } else {
+        try {
+            $lotacao = Lotacao::where('lot_id', $lot_id)->first();
+            if (!$lotacao) {
+                return response()->json(['message' => 'Lotação não encontrada'], 404);
+            }
             $lotacao->delete();
+            return response()->json(['message' => 'Lotação Removida'], 200);
+        } catch (QueryException $e) {
+            Log::channel('database_errors')->error('Erro ao deletar lotação no banco de dados', [
+                'exception' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'input' => $request->all(),
+            ]);
+            return response()->json(['message' => 'Erro ao deletar lotação'], 500);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erro ao deletar lotação'], 500);
         }
-        return response()->json(['message' => 'Lotação Removida', 'lotacao' => $lotacao]);
     }
 }

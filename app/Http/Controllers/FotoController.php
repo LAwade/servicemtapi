@@ -7,6 +7,9 @@ use App\Models\Pessoa;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Log;
 
 class FotoController extends Controller
 {
@@ -29,14 +32,15 @@ class FotoController extends Controller
 
     public function store(Request $request, string $pes_id)
     {
-        $request->validate([
-            'foto' => 'required|image',
-        ]);
-
+        
         try {
+            $request->validate([
+                'foto' => 'required|image',
+            ]);
+
             $pessoa = Pessoa::where('pes_id', $pes_id)->first();
             if (!$pessoa) {
-                return response('Registro de não foi encontrado!', 404)->json();
+                return response()->json(['message' => 'Arquivo não encontrado!'], 404);
             }
 
             $path = $request->file('foto')->store('fotos/uploads', 's3');
@@ -66,6 +70,21 @@ class FotoController extends Controller
                 'message' => 'Arquivo de imagem da pessoa foi atualizada!',
                 'Foto' => $foto,
             ], 200);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Erro de validação',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (QueryException $e) {
+            Log::channel('database_errors')->error('Erro ao adicionar o arquivo no banco de dados', [
+                'exception' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'input' => $request->all(),
+            ]);
+            return response()->json([
+                'message' => 'Erro ao adicionar o arquivo no banco de dados',
+            ], 500);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'OPS: Não foi possível encontrar o arquivo!',
@@ -76,11 +95,12 @@ class FotoController extends Controller
 
     public function update(Request $request, string $pes_id)
     {
-        $request->validate([
-            'foto' => 'required|image',
-        ]);
-
+        
         try {
+            $request->validate([
+                'foto' => 'required|image',
+            ]);
+
             $pessoa = Pessoa::where('pes_id', $pes_id)->first();
             if (!$pessoa) {
                 return response()->json(['message' => 'Arquivo não encontrado!'], 404);
@@ -104,6 +124,21 @@ class FotoController extends Controller
                 'message' => 'Arquivo de imagem da pessoa foi atualizado!',
                 'Foto' => $foto,
             ], 200);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Erro de validação',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (QueryException $e) {
+            Log::channel('database_errors')->error('Erro ao adicionar o arquivo no banco de dados', [
+                'exception' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'input' => $request->all(),
+            ]);
+            return response()->json([
+                'message' => 'Erro ao adicionar o arquivo no banco de dados',
+            ], 500);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'OPS: Não foi possível converter o arquivo!',
@@ -152,6 +187,16 @@ class FotoController extends Controller
 
             $fotoPessoa->delete();
             return response()->json(['message' => 'Arquivo da imagem da pessoa foi removida!', 'fotoPessoa' => $fotoPessoa], 200);
+        } catch (QueryException $e) {
+            Log::channel('database_errors')->error('Erro ao deletar o arquivo no banco de dados', [
+                'exception' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'input' => $request->all(),
+            ]);
+            return response()->json([
+                'message' => 'Erro ao deletar o arquivo no banco de dados',
+            ], 500);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'OPS: Não foi possível converter o arquivo!',

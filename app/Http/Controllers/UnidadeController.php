@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Unidade;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Log;
 
 class UnidadeController extends Controller
 {
@@ -18,20 +20,23 @@ class UnidadeController extends Controller
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Não foi possível encontrar as unidades',
-                'error' => $e->getMessage(),
+                'message' => 'Não foi possível encontrar as unidades'
             ], 500);
         }
     }
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'unid_nome' => 'required|string',
-            'unid_sigla' => 'required|string',
-        ]);
+        if (!$request->headers->has('Accept')) {
+            $request->headers->set('Accept', 'application/json');
+        }
 
         try {
+            $validated = $request->validate([
+                'unid_nome' => 'required|string',
+                'unid_sigla' => 'required|string',
+            ]);
+
             $unidade = Unidade::where('unidade_id', $request->unidade_id)->first();
             if (!$unidade) {
                 $unidade = Unidade::create($validated);
@@ -41,10 +46,24 @@ class UnidadeController extends Controller
                 'message' => 'A unidade foi cadastrada com sucesso!',
                 'unidade' => $unidade,
             ], 200);
-        } catch (\Exception $e) {
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Erro de validação',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (QueryException $e) {
+            Log::channel('database_errors')->error('Erro ao adicionar a unidade no banco de dados', [
+                'exception' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'input' => $request->all(),
+            ]);
             return response()->json([
                 'message' => 'Não foi possível cadastrar a unidade',
-                'error' => $e->getMessage(),
+            ], 500);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Não foi possível cadastrar a unidade'
             ], 500);
         }
     }
@@ -54,7 +73,7 @@ class UnidadeController extends Controller
         try {
             $unidade = Unidade::where('unidade_id', $unidade_id)->first();
             if (!$unidade) {
-                return response('Não encontrado', 404)->json([
+                return response()->json([
                     'message' => 'A Unidade não foi encontrada!',
                 ], 404);
             }
@@ -62,23 +81,35 @@ class UnidadeController extends Controller
                 'message' => 'Unidade foi encontrada!',
                 'unidade' => $unidade,
             ], 200);
-        } catch (\Exception $e) {
+        } catch (QueryException $e) {
+            Log::channel('database_errors')->error('Erro ao buscar a unidade no banco de dados', [
+                'exception' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'input' => $request->all(),
+            ]);
             return response()->json([
                 'message' => 'Não foi possível encontrar a unidade',
-                'error' => $e->getMessage(),
+            ], 500);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Não foi possível encontrar a unidade'
             ], 500);
         }
     }
 
     public function update(Request $request, string $unidade_id)
     {
-
-        $validated = $request->validate([
-            'st_data_admissao' => 'string',
-            'st_data_demissao' => 'string',
-        ]);
+        if (!$request->headers->has('Accept')) {
+            $request->headers->set('Accept', 'application/json');
+        }
 
         try {
+            $validated = $request->validate([
+                'st_data_admissao' => 'required|string',
+                'st_data_demissao' => 'required|string',
+            ]);
+
             $unidade = Unidade::where('unidade_id', $unidade_id)->first();
             if (!$unidade) {
                 return response()->json([
@@ -91,10 +122,24 @@ class UnidadeController extends Controller
                 'message' => 'A unidade foi atualizada!',
                 'unidade' => $unidade,
             ], 200);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Erro de validação',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (QueryException $e) {
+            Log::channel('database_errors')->error('Erro ao atualizar a unidade no banco de dados', [
+                'exception' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'input' => $request->all(),
+            ]);
+            return response()->json([
+                'message' => 'Não foi possível atualizar a unidade'
+            ], 500);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Não foi possível atualizar a unidade',
-                'error' => $e->getMessage(),
+                'message' => 'Não foi possível atualizar a unidade'
             ], 500);
         }
     }
@@ -110,11 +155,20 @@ class UnidadeController extends Controller
             }
             $unidade->delete();
 
-            return response()->json(['message' => 'A unidade foi removida com sucesso!',]);
-        } catch (\Exception $e) {
+            return response()->json(['message' => 'A unidade foi removida com sucesso!'], 200);
+        } catch (QueryException $e) {
+            Log::channel('database_errors')->error('Erro ao remover a unidade no banco de dados', [
+                'exception' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'input' => $request->all(),
+            ]);
             return response()->json([
                 'message' => 'Não foi possível remover a unidade',
-                'error' => $e->getMessage(),
+            ], 500);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Não foi possível remover a unidade'
             ], 500);
         }
     }
