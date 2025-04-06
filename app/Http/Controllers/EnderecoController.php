@@ -17,7 +17,7 @@ class EnderecoController extends Controller
         if (!$endereco) {
             return response('O endereço não foi encontrado', 404)->json();
         }
-        return response()->json(['message' => 'Os seguintes ndereços foram encontrados', 'endereco' => $endereco]);
+        return response()->json(['message' => 'Os seguintes endereços foram encontrados', 'endereco' => $endereco], 200);
     }
 
     public function store(Request $request)

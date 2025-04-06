@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\URL;
 
 class FotoController extends Controller
 {
@@ -30,9 +31,13 @@ class FotoController extends Controller
         }
     }
 
+    /**
+     * ATUALIZA E SALVA O ARQUIVO NO MINIO
+     * @param Request $request
+     * @param string $pes_id         
+     */
     public function store(Request $request, string $pes_id)
     {
-        
         try {
             $request->validate([
                 'foto' => 'required|image',
@@ -93,60 +98,6 @@ class FotoController extends Controller
         }
     }
 
-    public function update(Request $request, string $pes_id)
-    {
-        
-        try {
-            $request->validate([
-                'foto' => 'required|image',
-            ]);
-
-            $pessoa = Pessoa::where('pes_id', $pes_id)->first();
-            if (!$pessoa) {
-                return response()->json(['message' => 'Arquivo não encontrado!'], 404);
-            }
-
-            $foto = FotoPessoa::where('pes_id', $pes_id)->first();
-            if (!$foto) {
-                return response()->json(['message' => 'O arquivo de imagem não foi encontrado!'], 404);
-            }
-
-            $path = $request->file('foto')->store('fotos/uploads', 's3');
-            $foto = FotoPessoa::update([
-                'fp_id' => $pes_id,
-                'pes_id' => $pes_id,
-                'fp_data' => Carbon::now(),
-                'fp_bucket' => env('AWS_BUCKET'),
-                'fp_hash' => $path,
-            ]);
-
-            return response()->json([
-                'message' => 'Arquivo de imagem da pessoa foi atualizado!',
-                'Foto' => $foto,
-            ], 200);
-        } catch (ValidationException $e) {
-            return response()->json([
-                'message' => 'Erro de validação',
-                'errors' => $e->errors(),
-            ], 422);
-        } catch (QueryException $e) {
-            Log::channel('database_errors')->error('Erro ao adicionar o arquivo no banco de dados', [
-                'exception' => $e->getMessage(),
-                'sql' => $e->getSql(),
-                'bindings' => $e->getBindings(),
-                'input' => $request->all(),
-            ]);
-            return response()->json([
-                'message' => 'Erro ao adicionar o arquivo no banco de dados',
-            ], 500);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'OPS: Não foi possível converter o arquivo!',
-                'arquivos' => $e->getMessage(),
-            ], 500);
-        }
-    }
-
     public function show(string $pes_id)
     {
 
@@ -155,14 +106,21 @@ class FotoController extends Controller
             if (!$foto) {
                 return response()->json(['message' => 'Arquivo não encontrado!'], 404);
             }
-
-            if (!Storage::disk('s3')->exists($foto->fp_hash)) {
+            // Verifica se o arquivo existe no MinIO
+            if (!Storage::disk(env('FILESYSTEM_DISK'))->exists($foto->fp_hash)) {
                 return response()->json(['message' => 'Arquivo não encontrado no MinIO'], 404);
             }
 
-            $url = Storage::disk('s3')->temporaryUrl(
-                $foto->fp_hash,
-                now()->addMinutes(5)
+            // Baixar o arquivo do MinIO e salvar localmente
+            $file = Storage::disk(env('FILESYSTEM_DISK'))->get($foto->fp_hash);
+            $fotoreplace = str_replace('fotos/uploads/', '', $foto->fp_hash);
+            Storage::disk('local')->put("public/exported/$fotoreplace", $file);
+
+            // Gerar URL temporária assinada
+            $url = URL::temporarySignedRoute(
+                'exported.file',
+                now()->addMinutes(5),
+                ['filename' => $fotoreplace]
             );
 
             return response()->json([
