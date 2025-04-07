@@ -81,10 +81,10 @@ php artisan serve --host=0.0.0.0 --port=8181
 | Método | Rota | Descrição |
 |---------|------|-------------|
 | `GET` | `/unidade` | Apresenta as unidades |
-| `GET` | `/show-unidade/{unidade_id}` | Identifica uma unidade com ID |
+| `GET` | `/show-unidade/{unid_id}` | Identifica uma unidade com ID |
 | `POST` | `/store-unidade` | Cadastra nova unidade |
-| `PUT` | `/update-unidade/{unidade_id}` | Update uma unidade com ID |
-| `DELETE` | `/delete-unidade/{unidade_id}` | Deleta uma unidade com ID |
+| `PUT` | `/update-unidade/{unid_id}` | Update uma unidade com ID |
+| `DELETE` | `/delete-unidade/{unid_id}` | Deleta uma unidade com ID |
 | `GET` | `/unidade-endereco` | Apresenta todas as unidade-endereço |
 | `GET` | `/show-unidade-endereco/{unid_id}` | Mostra o vínculo com unidade e endereço |
 | `POST` | `/store-unidade-endereco` | Cadastra novo vínculo com unidade e endereço |
