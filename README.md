@@ -70,7 +70,6 @@ php artisan serve --host=0.0.0.0 --port=8181
 | `POST` | `/store-servidor-efetivo` | Cadastra novo servidor efetivo |
 | `PUT` | `/update-servidor-efetivo/{pes_id}` | Update um servidor efetivo com ID |
 | `DELETE` | `/delete-servidor-efetivo/{pes_id}` | Deleta um servidor efetivo com ID |
-
 | `GET` | `/servidor-temporario` | Apresenta todos os servidores temporários |
 | `GET` | `/show-servidor-temporario/{pes_id}` | Exibe um servidor temporário com ID |
 | `POST` | `/store-servidor-temporario` | Cadastra um novo servidor temporário |
