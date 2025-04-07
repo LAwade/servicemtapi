@@ -118,8 +118,7 @@ class UnidadeEnderecoController extends Controller
 
         try {
             $validated = $request->validate([
-                'st_data_admissao' => 'required|string',
-                'st_data_demissao' => 'required|string',
+                'end_id' => 'required|integer'
             ]);
 
             $unidade = UnidadeEndereco::where('unid_id', $unid_id)->first();
@@ -173,8 +172,7 @@ class UnidadeEnderecoController extends Controller
             Log::channel('database_errors')->error('Erro ao remover a unidade_endereco no banco de dados', [
                 'exception' => $e->getMessage(),
                 'sql' => $e->getSql(),
-                'bindings' => $e->getBindings(),
-                'input' => $request->all(),
+                'bindings' => $e->getBindings()
             ]);
             return response()->json([
                 'message' => 'Não foi possível remover o endereço da unidade'

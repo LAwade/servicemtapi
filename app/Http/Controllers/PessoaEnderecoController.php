@@ -132,8 +132,7 @@ class PessoaEnderecoController extends Controller
             Log::channel('database_errors')->error('Erro ao deletar o endereço da pessoa no banco de dados', [
                 'exception' => $e->getMessage(),
                 'sql' => $e->getSql(),
-                'bindings' => $e->getBindings(),
-                'input' => $request->all(),
+                'bindings' => $e->getBindings()
             ]);
             return response()->json(['message' => 'Erro ao deletar o endereço da pessoa'], 500);
         } catch (\Exception $e) {

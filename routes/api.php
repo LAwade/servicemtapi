@@ -70,10 +70,10 @@ Route::middleware(['api', 'auth.api.sanctum'])->group(function (){
     
     /** ROTAS PARA UNIDADE **/
     Route::get('/unidade', [UnidadeController::class, 'index']);
-    Route::get('/show-unidade/{unidade_id}', [UnidadeController::class, 'show']);
+    Route::get('/show-unidade/{unid_id}', [UnidadeController::class, 'show']);
     Route::post('/store-unidade', [UnidadeController::class, 'store']);
-    Route::put('/update-unidade/{unidade_id}', [UnidadeController::class, 'update']);
-    Route::delete('/delete-unidade/{unidade_id}', [UnidadeController::class, 'destroy']);
+    Route::put('/update-unidade/{unid_id}', [UnidadeController::class, 'update']);
+    Route::delete('/delete-unidade/{unid_id}', [UnidadeController::class, 'destroy']);
 
     /** ROTAS PARA UNIDADE END **/
     Route::get('/unidade-endereco', [UnidadeEnderecoController::class, 'index']);
@@ -85,7 +85,6 @@ Route::middleware(['api', 'auth.api.sanctum'])->group(function (){
     /** ROTAS PARA SERVIDOR EFETICO **/
     Route::get('/servidor-efetivo', [ServidorEfetivoController::class, 'index']);
     Route::get('/show-servidor-efetivo/{pes_id}', [ServidorEfetivoController::class, 'show']);
-    Route::post('/store-cadastro-servidor-efetivo', [ServidorEfetivoController::class, 'cadastroServidorEfetivo']);
     Route::post('/store-servidor-efetivo', [ServidorEfetivoController::class, 'store']);
     Route::put('/update-servidor-efetivo/{pes_id}', [ServidorEfetivoController::class, 'update']);
     Route::delete('/delete-servidor-efetivo/{pes_id}', [ServidorEfetivoController::class, 'destroy']);

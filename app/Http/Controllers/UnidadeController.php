@@ -37,7 +37,7 @@ class UnidadeController extends Controller
                 'unid_sigla' => 'required|string',
             ]);
 
-            $unidade = Unidade::where('unidade_id', $request->unidade_id)->first();
+            $unidade = Unidade::where('unid_id', $request->unid_id)->first();
             if (!$unidade) {
                 $unidade = Unidade::create($validated);
             }
@@ -68,10 +68,10 @@ class UnidadeController extends Controller
         }
     }
 
-    public function show(string $unidade_id)
+    public function show(string $unid_id)
     {
         try {
-            $unidade = Unidade::where('unidade_id', $unidade_id)->first();
+            $unidade = Unidade::where('unid_id', $unid_id)->first();
             if (!$unidade) {
                 return response()->json([
                     'message' => 'A Unidade não foi encontrada!',
@@ -86,7 +86,7 @@ class UnidadeController extends Controller
                 'exception' => $e->getMessage(),
                 'sql' => $e->getSql(),
                 'bindings' => $e->getBindings(),
-                'input' => $request->all(),
+                'input' => $unidade_id,
             ]);
             return response()->json([
                 'message' => 'Não foi possível encontrar a unidade',
@@ -98,7 +98,7 @@ class UnidadeController extends Controller
         }
     }
 
-    public function update(Request $request, string $unidade_id)
+    public function update(Request $request, string $unid_id)
     {
         if (!$request->headers->has('Accept')) {
             $request->headers->set('Accept', 'application/json');
@@ -106,11 +106,11 @@ class UnidadeController extends Controller
 
         try {
             $validated = $request->validate([
-                'st_data_admissao' => 'required|string',
-                'st_data_demissao' => 'required|string',
+                'unid_nome' => 'string',
+                'unid_sigla' => 'string',
             ]);
 
-            $unidade = Unidade::where('unidade_id', $unidade_id)->first();
+            $unidade = Unidade::where('unid_id', $unid_id)->first();
             if (!$unidade) {
                 return response()->json([
                     'message' => 'A unidade não foi encontrada!',
@@ -144,10 +144,10 @@ class UnidadeController extends Controller
         }
     }
 
-    public function destroy(string $unidade_id)
+    public function destroy(string $unid_id)
     {
         try {
-            $unidade = Unidade::where('unidade_id', $unidade_id)->first();
+            $unidade = Unidade::where('unid_id', $unid_id)->first();
             if (!$unidade) {
                 return response()->json([
                     'message' => 'A unidade não foi encontrada!',
@@ -160,8 +160,7 @@ class UnidadeController extends Controller
             Log::channel('database_errors')->error('Erro ao remover a unidade no banco de dados', [
                 'exception' => $e->getMessage(),
                 'sql' => $e->getSql(),
-                'bindings' => $e->getBindings(),
-                'input' => $request->all(),
+                'bindings' => $e->getBindings()
             ]);
             return response()->json([
                 'message' => 'Não foi possível remover a unidade',

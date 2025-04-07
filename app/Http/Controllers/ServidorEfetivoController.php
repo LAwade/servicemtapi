@@ -154,8 +154,7 @@ class ServidorEfetivoController extends Controller
             Log::channel('database_errors')->error('Erro ao remover o servidor no banco de dados', [
                 'exception' => $e->getMessage(),
                 'sql' => $e->getSql(),
-                'bindings' => $e->getBindings(),
-                'input' => $request->all(),
+                'bindings' => $e->getBindings()
             ]);
             return response()->json([
                 'message' => 'Erro ao remover o servidor no banco de dados'

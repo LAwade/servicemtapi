@@ -31,7 +31,6 @@ class CidadeController extends Controller
         }
 
         try {
-
             $valited = $request->validate([
                 'cid_nome' => 'required|string',
                 'cid_uf' => 'required|string',
@@ -126,8 +125,7 @@ class CidadeController extends Controller
             Log::channel('database_errors')->error('Erro ao deletar a cidade no banco de dados', [
                 'exception' => $e->getMessage(),
                 'sql' => $e->getSql(),
-                'bindings' => $e->getBindings(),
-                'input' => $request->all(),
+                'bindings' => $e->getBindings()
             ]);
             return response()->json(['message' => 'Erro ao buscar/deleção da cidade'], 500);
         } catch (\Exception $e) {

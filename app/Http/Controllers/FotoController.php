@@ -11,6 +11,7 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
+use App\Actions\FotoAction;
 
 class FotoController extends Controller
 {
@@ -106,22 +107,11 @@ class FotoController extends Controller
             if (!$foto) {
                 return response()->json(['message' => 'Arquivo não encontrado!'], 404);
             }
+            $url = FotoAction::dispatch($foto->fp_hash);
             // Verifica se o arquivo existe no MinIO
-            if (!Storage::disk(env('FILESYSTEM_DISK'))->exists($foto->fp_hash)) {
+            if (!$url) {
                 return response()->json(['message' => 'Arquivo não encontrado no MinIO'], 404);
             }
-
-            // Baixar o arquivo do MinIO e salvar localmente
-            $file = Storage::disk(env('FILESYSTEM_DISK'))->get($foto->fp_hash);
-            $fotoreplace = str_replace('fotos/uploads/', '', $foto->fp_hash);
-            Storage::disk('local')->put("public/exported/$fotoreplace", $file);
-
-            // Gerar URL temporária assinada
-            $url = URL::temporarySignedRoute(
-                'exported.file',
-                now()->addMinutes(5),
-                ['filename' => $fotoreplace]
-            );
 
             return response()->json([
                 'message' => 'URL temporária gerada com sucesso!',
@@ -149,8 +139,7 @@ class FotoController extends Controller
             Log::channel('database_errors')->error('Erro ao deletar o arquivo no banco de dados', [
                 'exception' => $e->getMessage(),
                 'sql' => $e->getSql(),
-                'bindings' => $e->getBindings(),
-                'input' => $request->all(),
+                'bindings' => $e->getBindings()
             ]);
             return response()->json([
                 'message' => 'Erro ao deletar o arquivo no banco de dados',

@@ -14,7 +14,7 @@ class ServidorTemporarioController extends Controller
     public function index()
     {
         try {
-            $servidor = ServidorTemporario::with('pes_id')->paginate(20);
+            $servidor = ServidorTemporario::join('pessoa', 'servidor_temporario.pes_id', '=', 'pessoa.pes_id')->paginate(20);
             return response()->json([
                 'message' => 'Os servidores foram encontrados',
                 'servidor' => $servidor,
@@ -33,7 +33,7 @@ class ServidorTemporarioController extends Controller
         }
         try {
             $validated = $request->validate([
-                'pes_id' => 'required',
+                'pes_id' => 'required|integer',
                 'st_data_admissao' => 'required|date',
                 'st_data_demissao' => 'required|date',
             ]);
@@ -154,8 +154,7 @@ class ServidorTemporarioController extends Controller
             Log::channel('database_errors')->error('Erro ao remover o servidor no banco de dados', [
                 'exception' => $e->getMessage(),
                 'sql' => $e->getSql(),
-                'bindings' => $e->getBindings(),
-                'input' => $request->all(),
+                'bindings' => $e->getBindings()
             ]);
             return response()->json([
                 'message' => 'Erro ao remover o servidor'

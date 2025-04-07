@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\URL;
+use App\Actions\FotoAction;
 
 class LotacaoController extends Controller
 {
@@ -92,13 +94,17 @@ class LotacaoController extends Controller
             }
 
             $data = $lotacoes->map(function ($lotacao) {
+                $url = null;
+
+                if ($lotacao->pessoa->foto) {
+                    $url = FotoAction::dispatch($lotacao->pessoa->foto->fp_hash);
+                }
+
                 return [
                     'nome' => $lotacao->pessoa->pes_nome,
                     'idade' => Carbon::parse($lotacao->pessoa->pes_data_nascimento)->age,
                     'unidade_lotacao' => $lotacao->unidade->unid_nome,
-                    'fotografia' => $lotacao->pessoa->foto
-                        ? Storage::disk('s3')->temporaryUrl($lotacao->pessoa->foto->fp_hash, now()->addMinutes(30))
-                        : null,
+                    'fotografia' => $url
                 ];
             });
 
@@ -115,12 +121,11 @@ class LotacaoController extends Controller
             Log::channel('database_errors')->error('Erro ao buscar lotação no banco de dados', [
                 'exception' => $e->getMessage(),
                 'sql' => $e->getSql(),
-                'bindings' => $e->getBindings(),
-                'input' => $request->all(),
+                'bindings' => $e->getBindings()
             ]);
             return response()->json(['message' => 'Erro ao buscar lotação'], 500);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Erro ao buscar lotação'], 500);
+            return response()->json(['message' => 'Erro ao buscar lotação. ' . $e->getMessage()], 500);
         }
         
     }
@@ -141,14 +146,18 @@ class LotacaoController extends Controller
             }
     
             $data = $servidores->map(function ($servidores) {
+                $url = null;
+
+                if ($servidores->pessoa->foto) {
+                    $url = FotoAction::dispatch($servidores->pessoa->foto->fp_hash);
+                }
+
                 return [
                     'nome' => $servidores->pessoa->pes_nome,
                     'idade' => Carbon::parse($servidores->pessoa->pes_data_nascimento)->age,
                     'unidade_lotacao' => $servidores->pessoa->lotacoes->unidade->unid_nome,
                     'endereco' => $servidores->pessoa->lotacoes->unidade->endereco->endereco->end_logradouro,
-                    'fotografia' => $servidores->pessoa->foto
-                        ? Storage::disk('s3')->temporaryUrl($servidores->pessoa->foto->fp_hash, now()->addMinutes(30))
-                        : null,
+                    'fotografia' => $url,
                 ];
             });
     
@@ -235,8 +244,7 @@ class LotacaoController extends Controller
             Log::channel('database_errors')->error('Erro ao deletar lotação no banco de dados', [
                 'exception' => $e->getMessage(),
                 'sql' => $e->getSql(),
-                'bindings' => $e->getBindings(),
-                'input' => $request->all(),
+                'bindings' => $e->getBindings()
             ]);
             return response()->json(['message' => 'Erro ao deletar lotação'], 500);
         } catch (\Exception $e) {

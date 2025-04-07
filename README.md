@@ -42,7 +42,9 @@ php artisan serve --host=0.0.0.0 --port=8181
 php artisan serve --host=0.0.0.0 --port=8181
 ```
 
-## Algumas Rotas da API
+## Documentação Rotas da API
+
+[Documentação Completa](https://documenter.getpostman.com/view/4107497/2sB2cVeMtm)
 
 ### Autenticação
 | Método | Rota | Descrição |
@@ -50,23 +52,6 @@ php artisan serve --host=0.0.0.0 --port=8181
 | `POST` | `/login` | Autenticação para criação do token |
 | `POST` | `/logout` | Logoff e expira o token |
 | `POST` | `/refresh` | Refresh o token para um novo |
-
-### Cidades
-| Método | Rota | Descrição |
-|---------|------|-------------|
-| `GET` | `/cidade` | Apresenta as cidades |
-| `GET` | `/show-cidade/{cid_id}` | Identifica uma cidade com ID |
-| `POST` | `/store-cidade` | Cadastra nova cidade |
-| `PUT` | `/update-cidade/{cid_id}` | Updade de uma cidade com ID |
-
-### Endereços
-| Método | Rota | Descrição |
-|---------|------|-------------|
-| `GET` | `/endereco` | Apresenta os endereços |
-| `GET` | `/show-endereco/{end_id}` | Identifica um endereço com ID |
-| `POST` | `/store-endereco` | Cadastra novo endereço |
-| `PUT` | `/update-endereco/{end_id}` | Update um endereço com ID |
-| `DELETE` | `/delete-endereco/{end_id}` | Deleta o endereço com ID|
 
 ### Arquivos de Imagem de Pessoas
 | Método | Rota | Descrição |
@@ -85,6 +70,7 @@ php artisan serve --host=0.0.0.0 --port=8181
 | `POST` | `/store-servidor-efetivo` | Cadastra novo servidor efetivo |
 | `PUT` | `/update-servidor-efetivo/{pes_id}` | Update um servidor efetivo com ID |
 | `DELETE` | `/delete-servidor-efetivo/{pes_id}` | Deleta um servidor efetivo com ID |
+
 | `GET` | `/servidor-temporario` | Apresenta todos os servidores temporários |
 | `GET` | `/show-servidor-temporario/{pes_id}` | Exibe um servidor temporário com ID |
 | `POST` | `/store-servidor-temporario` | Cadastra um novo servidor temporário |

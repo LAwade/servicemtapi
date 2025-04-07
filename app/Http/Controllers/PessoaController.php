@@ -127,8 +127,7 @@ class PessoaController extends Controller
             Log::channel('database_errors')->error('Erro ao deletar a pessoa no banco de dados', [
                 'exception' => $e->getMessage(),
                 'sql' => $e->getSql(),
-                'bindings' => $e->getBindings(),
-                'input' => $request->all(),
+                'bindings' => $e->getBindings()
             ]);
             return response()->json(['message' => 'Erro ao deletar pessoa'], 500);
         } catch (\Exception $e) {
