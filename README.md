@@ -3,7 +3,8 @@
 
 ## Participante
 - Nome: LUCAS AWADE TEIXEIRA SILVA
-- Posição: Desenvolvedor PHP - PLENO
+- Perfil: DESENVOLVEDOR PHP - PLENO
+- Número da inscrição: 9473
 
 ## Visão Geral
 Sistema desenvolvido em PHP 8.1 para o processo seletivo da SEPLAG, na qual consiste em salvar informações de Servidor Efetivo, Servidor Temporário, Unidade e Lotação. Também foi seguido as tecnologias compostas no conforme o proposto. 
